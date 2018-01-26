@@ -6,7 +6,7 @@
 #include "data.hpp"
 
 #include "recommendation-engine.hpp"
-#include "parallel-executor.hpp"
+//#include "parallel-executor.hpp"
 
 #define START_OFFSET 0
 #define NUM_USERS 100
@@ -60,18 +60,18 @@ void run() {
     saveResult(recommendedSongs);
 }
 
-void runParallel() {
-//    Data data("train_triplets.txt", "kaggle_visible_evaluation_triplets.txt");
-//    Data data("/Volumes/RAM Disk/train_triplets.txt", "/Volumes/RAM Disk/kaggle_visible_evaluation_triplets.txt");
+//void runParallel() {
+////    Data data("train_triplets.txt", "kaggle_visible_evaluation_triplets.txt");
+////    Data data("/Volumes/RAM Disk/train_triplets.txt", "/Volumes/RAM Disk/kaggle_visible_evaluation_triplets.txt");
+////
+////    const auto &userIds = Data::getEvaluationUsers("/Volumes/RAM Disk/kaggle_users.txt");
+////    std::vector<string> targetUsers(userIds.begin() + START_OFFSET, userIds.begin() + NUM_USERS);
 //
-//    const auto &userIds = Data::getEvaluationUsers("/Volumes/RAM Disk/kaggle_users.txt");
-//    std::vector<string> targetUsers(userIds.begin() + START_OFFSET, userIds.begin() + NUM_USERS);
-
-//    RecommendationEngine engine(data);
-
-    ParallelExecutor executor("result.txt");
-    executor.start();
-}
+////    RecommendationEngine engine(data);
+//
+//    ParallelExecutor executor("result.txt");
+//    executor.start();
+//}
 
 int main() {
     //runParallel();
