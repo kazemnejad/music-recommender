@@ -13,7 +13,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::swap;
-using std::sqrtf;
+using std::sqrt;
 
 template<typename T>
 std::vector<string> keys(const unordered_map<string, T> &map) {
@@ -121,7 +121,7 @@ double RecommendationEngine::calculateSimilarity(const string &sId1, const strin
         return 0.0;
 
     return set_intersection(songList1, songList2).size() * 1.0 /
-           (sqrtf(songList1.size()) * sqrtf(songList2.size()));
+           (sqrt(songList1.size()) * sqrt(songList2.size()));
 }
 
 template<typename T>

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <chrono>
 #include <sstream>
+#include <iterator>
 #include "data.hpp"
 
 #include "recommendation-engine.hpp"
@@ -15,6 +16,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::ostringstream;
+using std::ostream_iterator;
 using std::chrono::microseconds;
 using std::chrono::nanoseconds;
 using std::chrono::high_resolution_clock;

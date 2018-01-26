@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iostream>
 #include <thread>
+#include <iterator>
 
 using std::cerr;
 using std::ostringstream;

@@ -10,6 +10,7 @@
 #include <chrono>
 #include <algorithm>
 #include <istream>
+#include <iterator>
 
 using std::cout;
 using std::endl;
@@ -80,13 +81,13 @@ void Data::readTrainingData(const string &filename) {
     cout << "finish converting ids..." << endl;
 
     cout << "start replacing ids..." << endl;
-    for (auto const&[song, listeners] : sl) {
+    for (const auto &pair : sl) {
         unordered_set<unsigned long> converted;
-        converted.reserve(listeners.size());
-        for (auto &strId : listeners)
+        converted.reserve(pair.second.size());
+        for (auto &strId : pair.second)
             converted.insert(intUserIdMap[strId]);
 
-        songListeners[song] = converted;
+        songListeners[pair.first] = converted;
     }
     cout << "finish replacing ids..." << endl;
 

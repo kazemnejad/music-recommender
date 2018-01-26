@@ -17,7 +17,6 @@ using std::string;
 using std::tuple;
 using std::ifstream;
 using std::pair;
-using std::function;
 using std::string;
 using std::unordered_set;
 using std::unordered_map;
