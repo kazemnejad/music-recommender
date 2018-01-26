@@ -14,15 +14,19 @@ public:
 
     unordered_map<string, std::vector<string>> recommend(const std::vector<string> &users);
 
-private:
-    float calculateSimilarity(const string &sId1, const string &sId2);
-
-    float calculateScore(const string &songId, const string &userId);
-
-    unordered_map<string, float> calculateScoreForUserSongs(const string &userId);
-
     std::vector<string> recommendToUser(const string &userId);
 
-    Data data;
+private:
+
+    unordered_map<string, double> calculateScoreForUserSongs(const string &userId);
+
+    double calculateScore(const string &songId, const string &userId);
+
+    double calculateSimilarity(const string &sId1, const string &sId2);
+
+    template<typename T>
+    static std::vector<T> set_intersection(const unordered_set<T> &a, const unordered_set<T> &b);
+
+    const Data &data;
 };
 

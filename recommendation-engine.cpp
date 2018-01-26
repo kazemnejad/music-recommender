@@ -4,12 +4,15 @@
 
 #include "recommendation-engine.hpp"
 
-#include <algorithm>
+#include <iostream>
+
+#include <utility>
 #include <cmath>
 
-using std::sort;
-using std::set_intersection;
-using std::back_inserter;
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::swap;
 using std::sqrtf;
 
 template<typename T>
@@ -27,41 +30,81 @@ RecommendationEngine::RecommendationEngine(const Data &d) : data(d) {}
 
 unordered_map<string, std::vector<string>> RecommendationEngine::recommend(const std::vector<string> &users) {
     unordered_map<string, std::vector<string>> result;
+    result.reserve(users.size());
+
     for (auto &userId: users)
         result[userId] = recommendToUser(userId);
 
     return result;
 }
 
-float RecommendationEngine::calculateSimilarity(const string &sId1, const string &sId2) {
-    auto songList1 = data.getSongListeners().at(sId1);
-    auto songList2 = data.getSongListeners().at(sId2);
+std::vector<string> RecommendationEngine::recommendToUser(const string &userId) {
+    if (data.getEvaluationUsersSongs().count(userId) == 0)
+        return std::vector<string>(
+                data.getSortedSongs().begin(),
+                data.getSortedSongs().begin() + MAX_NUM_RECOMMENDED_SONG
+        );
 
-    if (songList1.empty() || songList2.empty())
-        return 0.0;
+    const auto &userSongs = data.getEvaluationUsersSongs().at(userId);
+    cout << "# num of user songs: " << userSongs.size() << endl;
 
-    std::vector<unsigned long> intersection;
-    set_intersection(
-            songList1.begin(), songList1.end(),
-            songList2.begin(), songList2.end(),
-            back_inserter(intersection)
+    const auto &songScores = calculateScoreForUserSongs(userId);
+    cerr << "done calculating scores" << endl;
+
+    // sort map by value and convert it to a list
+    std::vector<std::pair<string, double>> recommendedSongs(songScores.size());
+    for (const auto &it : songScores)
+        recommendedSongs.emplace_back(it);
+
+    cerr << "done calculating scores" << endl;
+    sort(recommendedSongs.begin(), recommendedSongs.end(),
+         [](std::pair<string, double> a, std::pair<string, double> b) -> bool {
+             return a.second > b.second;
+         }
     );
+    cerr << "done calculating scoress" << endl;
+    std::vector<string> result;
+    for (const auto &song : recommendedSongs) {
+        if (result.size() >= MAX_NUM_RECOMMENDED_SONG)
+            break;
 
-    return intersection.size() * 1.0f / (sqrtf(songList1.size()) * sqrtf(songList2.size()));
+        if (userSongs.count(song.first) == 0)
+            result.push_back(song.first);
+    }
+
+    return result;
 }
 
-float RecommendationEngine::calculateScore(const string &songId, const string &userId) {
+unordered_map<string, double> RecommendationEngine::calculateScoreForUserSongs(const string &userId) {
+    unsigned long numSongs = data.getSortedSongs().size();
+    unsigned long counter = 0;
+
+    unordered_map<string, double> scores;
+    scores.reserve(numSongs);
+    for (const auto &songId : data.getSortedSongs()) {
+        double score = calculateScore(songId, userId);
+//        cerr << "# song " << ++counter << " / " << numSongs << " = " << score << endl;
+        scores[songId] = score;
+    }
+
+    return scores;
+}
+
+double RecommendationEngine::calculateScore(const string &songId, const string &userId) {
     bool isSongAvailable = data.getSongListeners().count(songId) == 1;
     if (!isSongAvailable)
-        return 0;
+        return 0.0;
 
-    float score = 0.0;
+    if (data.getEvaluationUsersSongs().count(userId) == 0)
+        return 0.0;
+
+    double score = 0.0;
     for (const auto &userSongId : data.getEvaluationUsersSongs().at(userId)) {
         isSongAvailable = data.getSongListeners().count(userSongId) == 1;
         if (!isSongAvailable)
             continue;
 
-        float similarity = calculateSimilarity(songId, userSongId);
+        double similarity = calculateSimilarity(songId, userSongId);
 
         // score += similarity ^ 3
         score += similarity * similarity * similarity;
@@ -70,41 +113,27 @@ float RecommendationEngine::calculateScore(const string &songId, const string &u
     return score;
 }
 
-unordered_map<string, float> RecommendationEngine::calculateScoreForUserSongs(const string &userId) {
-    unordered_map<string, float> scores;
-    for (const auto &songId : data.getSortedSongs())
-        scores[songId] = calculateScore(songId, userId);
+double RecommendationEngine::calculateSimilarity(const string &sId1, const string &sId2) {
+    const auto &songList1 = data.getSongListeners().at(sId1);
+    const auto &songList2 = data.getSongListeners().at(sId2);
 
-    return scores;
+    if (songList1.empty() || songList2.empty())
+        return 0.0;
+
+    return set_intersection(songList1, songList2).size() * 1.0 /
+           (sqrtf(songList1.size()) * sqrtf(songList2.size()));
 }
 
-std::vector<string> RecommendationEngine::recommendToUser(const string &userId) {
-    auto songs = data.getEvaluationUsersSongs();
-    if (songs.count(userId) == 0)
-        return std::vector<string>(
-                data.getSortedSongs().begin(),
-                data.getSortedSongs().begin() + MAX_NUM_RECOMMENDED_SONG
-        );
+template<typename T>
+std::vector<T> RecommendationEngine::set_intersection(const unordered_set<T> &a, const unordered_set<T> &b) {
+    const unordered_set<T> &src = a.size() > b.size() ? b : a;
+    const unordered_set<T> &dest = a.size() > b.size() ? a : b;
 
-    auto userSongs = songs.at(userId);
-    auto songScores = calculateScoreForUserSongs(userId);
+    std::vector<T> intersection;
+    intersection.reserve(src.size());
+    for (const auto &item : src)
+        if (dest.count(item) == 1)
+            intersection.push_back(item);
 
-    // sort map by value and convert it to a list
-    std::vector<string> recommendedSongs = keys(songScores);
-    sort(recommendedSongs.begin(), recommendedSongs.end(),
-         [songScores](const string &a, const string &b) -> bool {
-             return songScores.at(a) > songScores.at(b);
-         }
-    );
-
-    std::vector<string> result;
-    for (auto &song : recommendedSongs) {
-        if (result.size() >= MAX_NUM_RECOMMENDED_SONG)
-            break;
-
-        if (userSongs.count(song) == 0)
-            result.push_back(song);
-    }
-
-    return result;
+    return intersection;
 }
