@@ -16,8 +16,7 @@ using std::pair;
 
 class ParallelExecutor {
 public:
-    explicit ParallelExecutor(RecommendationEngine &engine, const std::vector<string> &users,
-                              const string &outputFilename);
+    explicit ParallelExecutor(const string &outputFilename);
 
     void start();
 
@@ -26,10 +25,10 @@ private:
 
     void recommender();
 
-    RecommendationEngine &engine;
+    RecommendationEngine *engine;
     ofstream output;
-    ThreadSafeQueue<string> usersToRecommend;
-    ThreadSafeQueue<pair<string, std::vector<string>>> resultToSave;
+    ThreadSafeQueue<string> *usersToRecommend;
+    ThreadSafeQueue<pair<string, std::vector<string>>> *resultToSave;
     unsigned long numUsers;
 
 };

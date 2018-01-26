@@ -14,41 +14,51 @@ using std::endl;
 using std::make_pair;
 using std::thread;
 
-ParallelExecutor::ParallelExecutor(
-        RecommendationEngine &engine,
-        const std::vector<string> &users,
-        const string &oFilename) : engine(engine) {
+ParallelExecutor::ParallelExecutor(const string &oFilename) {
+    Data data("/Volumes/RAM Disk/train_triplets.txt", "/Volumes/RAM Disk/kaggle_visible_evaluation_triplets.txt");
+
+    const auto &userIds = Data::getEvaluationUsers("/Volumes/RAM Disk/kaggle_users.txt");
+    std::vector<string> targetUsers(userIds.begin() + 0, userIds.begin() + 100);
+
+    engine = new RecommendationEngine(data);
+
     output.open(oFilename);
 
-    numUsers = users.size();
-    for (const auto &userId : users)
-        usersToRecommend.push(userId);
+    usersToRecommend = new ThreadSafeQueue<string>(100);
+    resultToSave = new ThreadSafeQueue<pair<string, std::vector<string>>>(100);
+
+    numUsers = targetUsers.size();
+    for (const auto &userId : targetUsers)
+        usersToRecommend->push(userId);
 }
 
 void ParallelExecutor::start() {
     unsigned numCpu = thread::hardware_concurrency();
 
     std::vector<thread> producers(numCpu - 1);
-    for (auto &t : producers)
-        t = thread([=] { recommender(); });
+    for (int i = 0; i < producers.size(); i++)
+        producers[i] = thread([=] { recommender(); });
 
     thread collector([=] { resultSaver(); });
 
     for (auto &t : producers)
         t.join();
 
-    resultToSave.close();
+    resultToSave->close();
 
     collector.join();
 }
 
 void ParallelExecutor::resultSaver() {
+//    cerr << "start_result_save" << endl;
     typedef pair<string, std::vector<string>> RecommResult;
 
     int counter = 0;
 
     RecommResult item;
-    while ((resultToSave.pop(item)) != ThreadSafeQueue<RecommResult>::CLOSED) {
+    while ((resultToSave->pop(item)) != ThreadSafeQueue<RecommResult>::CLOSED) {
+        cerr << "## " << ++counter << " <done> " << item.first << endl;
+
         output << item.first << "__";
 
         ostringstream oss;
@@ -59,22 +69,27 @@ void ParallelExecutor::resultSaver() {
 
         output << oss.str() << endl;
 
-        cerr << "## " << ++counter << " <done> " << item.first << endl;
 
         if (counter == numUsers)
-            usersToRecommend.close();
+            usersToRecommend->close();
     }
+
+    cerr << "finish_result_save" << endl;
 
     output.close();
 }
 
 void ParallelExecutor::recommender() {
+//    cerr << "start_recommender" << endl;
     string user;
-    while (usersToRecommend.pop(user) != ThreadSafeQueue<string>::CLOSED)
-        resultToSave.push(make_pair(
+    while (usersToRecommend->pop(user) != ThreadSafeQueue<string>::CLOSED) {
+//        cerr << "start for " << user << endl;
+        resultToSave->push(make_pair(
                 user,
-                engine.recommendToUser(user)
+                engine->recommendToUser(user)
         ));
+    }
+//    cerr << "finish_recommender" << endl;
 }
 
 
