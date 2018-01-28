@@ -92,23 +92,45 @@ double calculate_cosine_similarity(const unsigned int &sId1, const unsigned int 
     return intersection.size() * 1.0 / (sqrt(len1) * sqrt(len2));
 }
 
-double calculate_similarity_v2(const unsigned int &sId1, const unsigned int &sId2) {
-    size_t len1 = songs[sId1].size();
-    size_t len2 = songs[sId2].size();
+double calculate_similarity_prob(const unsigned int &sId, const unsigned int &uId) {
+    size_t sLen = songs[sId].size();
+    size_t uLen = songs[uId].size();
 
     std::vector<unsigned int> intersection;
-    intersection.reserve(min(len1, len2));
+    intersection.reserve(min(sLen, uLen));
     set_intersection(
-            songs[sId1].begin(), songs[sId1].end(),
-            songs[sId2].begin(), songs[sId2].end(),
+            songs[sId].begin(), songs[sId].end(),
+            songs[uId].begin(), songs[uId].end(),
             back_inserter(intersection)
     );
 
     if (intersection.empty())
         return 0.0;
 
-    return intersection.size() * 1.0 / (pow(len1, SIM_PARAM) * pow(len2, 1 - SIM_PARAM));
+    return intersection.size() * 1.0 / (pow(sLen, PROB_SIM_PARAM) * pow(uLen, 1 - PROB_SIM_PARAM));
 }
+
+double calculate_similarity_tversky(const unsigned int &sId, const unsigned int &uId) {
+    size_t sLen = songs[sId].size();
+    size_t uLen = songs[uId].size();
+
+    std::vector<unsigned int> intersection;
+    intersection.reserve(min(sLen, uLen));
+    set_intersection(
+            songs[sId].begin(), songs[sId].end(),
+            songs[uId].begin(), songs[uId].end(),
+            back_inserter(intersection)
+    );
+
+    if (intersection.empty())
+        return 0.0;
+
+    size_t intersectionSize = intersection.size();
+
+    return intersectionSize * 1.0 /
+           (intersectionSize + T_SIM_ALPHA * (uLen - intersectionSize) + T_SIM_BETA * (sLen - intersectionSize));
+}
+
 
 std::vector<unsigned int> recommend(const string &user) {
     auto startTs = high_resolution_clock::now();
@@ -129,7 +151,7 @@ std::vector<unsigned int> recommend(const string &user) {
             if (songs[uSongId].empty())
                 continue;
 
-            double similarity = calculate_cosine_similarity(songId, uSongId);
+            double similarity = calculate_similarity(songId, uSongId);
             scores[songId] += similarity * similarity * similarity;
         }
     }

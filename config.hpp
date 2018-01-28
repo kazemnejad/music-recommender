@@ -15,11 +15,16 @@
 #define NUM_SONGS 386220
 
 #define START_POINT 0
-#define NUM_USER_TO_RECOMMEND 100
+#define NUM_USER_TO_RECOMMEND 1000
 
 #define MAX_RECOMMENDED_SONG 500
 
-#define SIM_PARAM 0.15
+#define PROB_SIM_PARAM 0.15
+
+#define T_SIM_ALPHA 0.8
+#define T_SIM_BETA (1-T_SIM_ALPHA)
+
+#define calculate_similarity calculate_cosine_similarity
 
 
 #endif //MUSIC_SIMILARITIES_CACHE_CONFIG_HPP
