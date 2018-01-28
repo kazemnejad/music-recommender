@@ -1,57 +1,27 @@
 //
-// Created by AmirHosein on 12/29/2017 AD.
+// Created by AmirHosein on 1/27/2018 AD.
 //
 
-#pragma once
+#ifndef MUSIC_SIMILARITIES_CACHE_UTILS_HPP
+#define MUSIC_SIMILARITIES_CACHE_UTILS_HPP
 
-#include <string>
-#include <unordered_set>
 #include <unordered_map>
-#include <tuple>
+#include <unordered_set>
+#include <string>
 #include <vector>
 
-#include <fstream>
+#include "config.hpp"
 
-using std::vector;
-using std::string;
-using std::tuple;
-using std::ifstream;
-using std::pair;
-using std::string;
-using std::unordered_set;
 using std::unordered_map;
+using std::unordered_set;
+using std::string;
 
-class Data {
-public:
-    explicit Data(const string &trainingDataFilename, const string &evDataFilename);
+extern std::vector<unsigned int> *songs;
+extern unordered_map<string, unordered_set<unsigned int>> *evalUsers;
+extern std::vector<unsigned int> *popularSongs;
 
-    const unordered_map<string, unordered_set<unsigned long>> &getSongListeners() const;
+void init_data();
 
-    const unordered_map<string, int> &getSongListenersCount() const;
+void test();
 
-    const unordered_set<string> &getUsers() const;
-
-    const unordered_map<string, unsigned long> &getIntUserIdMap() const;
-
-    const unordered_map<string, unordered_set<string>> &getEvaluationUsersSongs() const;
-
-    const std::vector<string> &getSortedSongs() const;
-
-    static std::vector<string> getEvaluationUsers(const string &filename);
-
-protected:
-    void readTrainingData(const string &filename);
-
-    void readEvaluationData(const string &filename);
-
-private:
-    unordered_map<string, unordered_set<unsigned long >> songListeners;
-    unordered_map<string, unordered_set<string>> userSongs;
-
-    std::vector<string> sortedSongs;
-    unordered_set<string> users;
-
-    unordered_map<string, int> songListenersCount;
-    unordered_map<string, unsigned long> intUserIdMap;
-};
-
+#endif //MUSIC_SIMILARITIES_CACHE_UTILS_HPP

@@ -1,170 +1,119 @@
 //
-// Created by AmirHosein on 12/29/2017 AD.
+// Created by AmirHosein on 1/27/2018 AD.
 //
 
 #include "data.hpp"
 
-#define TOTAL_NUM_TRAIN_TRIPLETS 48373586
-
 #include <iostream>
+#include <fstream>
 #include <chrono>
 #include <algorithm>
-#include <istream>
-#include <iterator>
 
+using std::ifstream;
 using std::cout;
 using std::endl;
-using std::copy;
-using std::istream_iterator;
-using std::sort;
 
 using std::chrono::high_resolution_clock;
-using std::chrono::milliseconds;
 using std::chrono::duration_cast;
+using std::chrono::milliseconds;
 
-Data::Data(const string &trainingDataFilename, const string &evDataFilename) {
-    auto startTs = high_resolution_clock::now();
+using std::vector;
+using std::unordered_map;
+using std::unordered_set;
 
-    songListeners.reserve(390 * 1000);
-    userSongs.reserve(120 * 1000);
-    users.reserve(1020000);
+std::vector<unsigned int> *songs;
+unordered_map<string, unordered_set<unsigned int>> *evalUsers;
+std::vector<unsigned int> *popularSongs;
 
-    readTrainingData(trainingDataFilename);
-    readEvaluationData(evDataFilename);
 
-    cout << "### reading data took " << duration_cast<milliseconds>(high_resolution_clock::now() - startTs).count()
-         << "ms\n";
-}
+void init_data() {
+    songs = new std::vector<unsigned int>[NUM_SONGS + 1];
+    evalUsers = new unordered_map<string, unordered_set<unsigned int>>(110000);
 
-const unordered_map<string, unordered_set<unsigned long>> &Data::getSongListeners() const {
-    return songListeners;
-}
+    auto start = high_resolution_clock::now();
+    unordered_map<string, unsigned int> songToId(NUM_SONGS);
+    ifstream fin(KAGGLE_SONGS);
 
-void Data::readTrainingData(const string &filename) {
-    ifstream fin(filename);
+    string songName;
+    unsigned int songId;
+    while (fin >> songName >> songId)
+        songToId[songName] = songId;
 
-    unordered_map<string, unordered_set<string>> sl;
-    sl.reserve(350 * 1000);
-    string userId, songId, count;
+    fin.close();
 
-    unsigned int counter = 0;
-    cout << "start reading training data..." << endl;
-    while (fin >> userId >> songId >> count) {
-        if (sl.count(songId)) {
-            auto &listeners = sl[songId];
-            listeners.insert(userId);
+    cout << "Done reading songs name map" << endl;
+
+    unordered_map<string, unsigned int> userToId(1020000);
+    unsigned int index = 0;
+
+    unordered_map<unsigned int, unordered_set<unsigned int>> songsUnordered(384546);
+    string userName;
+    int count;
+
+    fin.open(TRAIN_TRIPLETS);
+    while (fin >> userName >> songName >> count) {
+        unsigned int userId = 0;
+        if (userToId.count(userName) == 0) {
+            userId = ++index;
+            userToId[userName] = userId;
         } else {
-            unordered_set<string> listeners;
-            listeners.reserve(10);
-            listeners.insert(userId);
-            sl[songId] = listeners;
+            userId = userToId[userName];
         }
 
-        users.insert(userId);
-        cout << "# " << (++counter) * 1.0 / TOTAL_NUM_TRAIN_TRIPLETS * 100 << "%\n";
+        songId = songToId[songName];
+        if (songsUnordered.count(songId) == 1) {
+            songsUnordered[songId].insert(userId);
+        } else {
+            unordered_set<unsigned int> set;
+            set.reserve(130);
+            set.insert(userId);
+
+            songsUnordered[songId] = set;
+        }
     }
+    fin.close();
 
-    cout << "finished reading training file." << endl;
+    cout << "Done reading songs unordered" << endl;
 
-    cout << "* num of users: " << users.size() << endl;
-    cout << "* num of songs: " << sl.size() << endl;
-
-    cout << "start processing training data..." << endl;
-
-    cout << "start converting ids..." << endl;
-    intUserIdMap.reserve(users.size());
-    unsigned long index = 0;
-    for (auto &user : users) {
-        intUserIdMap[user] = index;
-        index++;
+    for (const auto &pair : songsUnordered) {
+        std::vector<unsigned int> dest(pair.second.size());
+        copy(pair.second.begin(), pair.second.end(), dest.begin());
+        std::sort(dest.begin(), dest.end());
+        songs[pair.first] = dest;
     }
-    cout << "finish converting ids..." << endl;
+    cout << "Done sorting songs" << endl;
 
-    cout << "start replacing ids..." << endl;
-    for (const auto &pair : sl) {
-        unordered_set<unsigned long> converted;
-        converted.reserve(pair.second.size());
-        for (auto &strId : pair.second)
-            converted.insert(intUserIdMap[strId]);
+    fin.open(EVALUATION_TRIPLETS);
+    while (fin >> userName >> songName >> count)
+        if (evalUsers->count(userName) == 1) {
+            (*evalUsers)[userName].insert(songToId[songName]);
+        } else {
+            unordered_set<unsigned int> set;
+            set.reserve(40);
+            set.insert(songToId[songName]);
 
-        songListeners[pair.first] = converted;
-    }
-    cout << "finish replacing ids..." << endl;
+            (*evalUsers)[userName] = set;
+        }
 
-    cout << "start sorting..." << endl;
-//    set<pair<string, int>, Comparator> sortedSet(
-//            songListenersCount.begin(),
-//            songListenersCount.end(),
-//            compFunctor
-//    );
+    fin.close();
 
-//    std::vector<pair<string, int>> output(sortedSet.begin(), sortedSet.end());
-//    std::vector<string> ss(output.size());
-//    for (int i = 0; i < output.size(); ++i)
-//        ss[i] = output[i].first;
+    cout << "Done reading eval songs" << endl;
 
-    sortedSongs.reserve(songListeners.size());
-    int i = 0;
-    for (auto const &pair : songListeners)
-        sortedSongs.emplace_back(pair.first);
+    std::vector<unsigned int> tmp(songsUnordered.size());
+    for (const auto &p : songsUnordered)
+        tmp.emplace_back(p.first);
 
-    auto compareFunction = [this](const string &elem1, const string &elem2) {
-        return songListeners[elem1].size() > songListeners[elem2].size();
+    auto compareFunction = [](unsigned int &elem1, unsigned int &elem2) {
+        return songs[elem1].size() > songs[elem2].size();
     };
-    sort(sortedSongs.begin(), sortedSongs.end(), compareFunction);
+    std::sort(tmp.begin(), tmp.end(), compareFunction);
 
-    cout << "finish sorting." << endl;
-    cout << "done processing training data." << endl;
+    popularSongs = new std::vector<unsigned int>(MAX_RECOMMENDED_SONG);
+    copy(tmp.begin(), tmp.begin() + MAX_RECOMMENDED_SONG, popularSongs->begin());
+
+    cout << "took " << duration_cast<milliseconds>(high_resolution_clock::now() - start).count() << endl;
 }
 
-void Data::readEvaluationData(const string &filename) {
-    ifstream fin(filename);
-
-    cout << "Start Reading Evaluation Data..." << endl;
-
-    unsigned int counter = 0;
-    string userId, songId, count;
-    while (fin >> userId >> songId >> count) {
-        if (userSongs.count(userId)) {
-            auto &songs = userSongs[userId];
-            songs.insert(songId);
-        } else {
-            userSongs[userId] = {songId};
-        }
-
-        cout << "# " << (++counter) * 1.0 / 1450933 * 100 << "%\n";
-    }
-
-    cout << "done Reading Evaluation Data." << endl;
-}
-
-const unordered_map<string, int> &Data::getSongListenersCount() const {
-    return songListenersCount;
-}
-
-const unordered_set<string> &Data::getUsers() const {
-    return users;
-}
-
-const unordered_map<string, unsigned long> &Data::getIntUserIdMap() const {
-    return intUserIdMap;
-}
-
-const unordered_map<string, unordered_set<string>> &Data::getEvaluationUsersSongs() const {
-    return userSongs;
-}
-
-const std::vector<string> &Data::getSortedSongs() const {
-    return sortedSongs;
-}
-
-std::vector<string> Data::getEvaluationUsers(const string &filename) {
-    ifstream file(filename);
-
-    std::vector<std::string> userIds;
-    copy(istream_iterator<string>(file),
-         istream_iterator<string>(),
-         back_inserter(userIds));
-
-    return userIds;
+void test() {
+    cout << (popularSongs == nullptr) << endl;
 }
