@@ -106,7 +106,7 @@ void init_data() {
     popularSongs = new std::vector<unsigned int>(MAX_RECOMMENDED_SONG);
     copy(tmp.begin(), tmp.begin() + MAX_RECOMMENDED_SONG, popularSongs->begin());
 
-    cout << "took " << duration_cast<milliseconds>(high_resolution_clock::now() - start).count() << endl;
+    cout << "took " << duration_cast<milliseconds>(high_resolution_clock::now() - start).count() << "ms\n";
 }
 
 void test() {
