@@ -21,10 +21,10 @@
 
 #define PROB_SIM_PARAM 0.15
 
-#define T_SIM_ALPHA 0.8
+#define T_SIM_ALPHA 0.95
 #define T_SIM_BETA (1-T_SIM_ALPHA)
 
-#define calculate_similarity calculate_cosine_similarity
+#define calculate_similarity calculate_similarity_tversky
 
 
 #endif //MUSIC_SIMILARITIES_CACHE_CONFIG_HPP
