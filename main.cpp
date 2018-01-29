@@ -19,7 +19,7 @@ int main() {
 
     cout << "all actions took: "
          << duration_cast<milliseconds>(high_resolution_clock::now() - startTs).count() * 1.0 / 1000
-         << "ms\n";
+         << "s\n";
 
     return 0;
 }
