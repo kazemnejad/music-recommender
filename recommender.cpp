@@ -10,6 +10,7 @@
 #include <cmath>
 #include <thread>
 #include <sstream>
+#include <algorithm>
 
 #include "tbb/concurrent_queue.h"
 
