@@ -11,6 +11,7 @@
 #include <thread>
 #include <sstream>
 #include <algorithm>
+#include <mutex>
 
 #include "tbb/concurrent_queue.h"
 
