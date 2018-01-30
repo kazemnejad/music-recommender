@@ -7,13 +7,9 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <algorithm>
 #include <cmath>
 #include <thread>
 #include <sstream>
-#include <iterator>
-#include <chrono>
-#include <mutex>
 
 #include "tbb/concurrent_queue.h"
 
@@ -131,6 +127,25 @@ double calculate_similarity_tversky(const unsigned int &sId, const unsigned int 
            (intersectionSize + T_SIM_ALPHA * (uLen - intersectionSize) + T_SIM_BETA * (sLen - intersectionSize));
 }
 
+double calculate_similarity_jacard(const unsigned int &sId, const unsigned int &uId) {
+    size_t sLen = songs[sId].size();
+    size_t uLen = songs[uId].size();
+
+    std::vector<unsigned int> intersection;
+    intersection.reserve(min(sLen, uLen));
+    set_intersection(
+            songs[sId].begin(), songs[sId].end(),
+            songs[uId].begin(), songs[uId].end(),
+            back_inserter(intersection)
+    );
+
+    if (intersection.empty())
+        return 0.0;
+
+    size_t intersectionSize = intersection.size();
+
+    return intersectionSize * 1.0 / (uLen + sLen - intersectionSize);
+}
 
 std::vector<unsigned int> recommend(const string &user) {
     auto startTs = high_resolution_clock::now();
