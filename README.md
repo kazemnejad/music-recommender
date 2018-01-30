@@ -12,7 +12,7 @@ This project is implemented by pure modern C++, and no extra library is used(rou
 
 ### on MacOS:</br>
 first install xcode, And then run following command:</br>
-`brew install tbb`
+`brew install git tbb`
 
 2- Get the source `git clone https://github.com/kazemnejad/music-recommender.git && cd music_recommender` </br>
 3- Compile! `make`
