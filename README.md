@@ -2,7 +2,7 @@
 
 It is a song recommender implemented using Item-Based Collaborative filtering  algorithm.
 
-This project is implemented by pure modern C++, and no extra library is used(roughly)
+This project is implemented in pure modern C++, and no extra library is used(roughly)
 
 # How to compile
 1- First install dependencies:
